@@ -1,3 +1,4 @@
+import argparse
 import requests
 import simplejson as json
 import sys
@@ -6,6 +7,7 @@ import os
 import base64
 import pandas
 import getpass
+from bs4 import BeautifulSoup
 from prettytable import from_csv
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -16,22 +18,13 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 if __name__ == "__main__":
-    opts, args = getopt.getopt(sys.argv[1:], "h", ["help"])
-    name = sys.argv[-1]
-    for o, a in opts:
-        if o in ("-h", "--help"):
-            print("python get_schedule.py [options] student_id")
-            print("  [options]")
-            print("    -h, --help          -- display this help")
-            sys.exit()
-        else:
-            assert False, "Unreconized options"
-    
+    print("Web crawler for NCTU class schedule")
+    parsor = argparse.ArgumentParser()
+    parsor.add_argument("username", help="username of NCTU portal")
+    args = parsor.parse_args()
+    name = args.username
     password = getpass.getpass("Password for " + name + ": ")
-    driver = webdriver.Remote (
-        command_executor="http://hare1039.nctu.me:4444/wd/hub",
-        desired_capabilities=DesiredCapabilities.CHROME
-    )
+    driver = webdriver.Chrome()
 
     driver.get("https://portal.nctu.edu.tw/portal/login.php")
     parsed = False
@@ -48,6 +41,8 @@ if __name__ == "__main__":
             }, false);
             ele.dispatchEvent(new Event("load"));
         """, img)
+# get cokies and get again
+
         with open(r"/tmp/getcaptcha.jpg", "wb") as f:
             f.write(base64.b64decode(img_captcha_base64))
         files = {"file": open("/tmp/getcaptcha.jpg", "rb")}
@@ -63,14 +58,14 @@ if __name__ == "__main__":
             reload_but = driver.find_element(By.ID, "seccode_refresh")
             ActionChains(driver).click(reload_but).perform()
 
-    print("ゲットだぜ")
+    print("Get it!")
 
     namefield = driver.find_element(By.ID, "username")
     namefield.send_keys(name)
     passfield = driver.find_element(By.ID, "password")
     passfield.send_keys(password)
     passfield.submit()
-    
+
     driver.get("https://portal.nctu.edu.tw/portal/relay.php?D=cos")
     try:
         element_present = EC.presence_of_element_located((By.ID, "submit"))
@@ -79,23 +74,24 @@ if __name__ == "__main__":
         print("Timed out waiting for page to load")
         assert False, "Timed out waiting for page to load"
     driver.find_element(By.ID, "submit").submit()
-    
+
     driver.find_element(By.ID, "idfrmSetPreceptor").submit()
-    
+
     driver.switch_to.frame("frmMenu")
     driver.execute_script("checkDiv('CrsTakenStateSearch');")
     driver.find_element(By.XPATH, "//a[@href='adSchedule.asp']").click()
 
-    driver.switch_to.default_content();
+    driver.switch_to.default_content()
     driver.switch_to.frame("frmMain")
 
     try:
-        element_present = EC.presence_of_element_located((By.XPATH, "/html/body/center/p/table[2]"))
+        element_present = EC.presence_of_element_located(
+            (By.XPATH, "/html/body/center/p/table[2]"))
         WebDriverWait(driver, 10).until(element_present)
     except TimeoutException:
         print("Timed out waiting for page to load")
         assert False, "Timed out waiting for page to load"
-    
+
     html_table = driver.find_element(By.XPATH, "/html/body/center/p/table[2]")
     table = pandas.read_html(html_table.get_attribute("outerHTML"))
     table[0].to_csv("/tmp/getclasses.csv")
