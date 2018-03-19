@@ -1,5 +1,5 @@
-import argparse
 import requests
+import argparse
 import simplejson as json
 import sys
 import getopt
@@ -25,26 +25,32 @@ if __name__ == "__main__":
     name = args.username
     password = getpass.getpass("Password for " + name + ": ")
     driver = webdriver.Chrome()
-
     driver.get("https://portal.nctu.edu.tw/portal/login.php")
     parsed = False
     while not parsed:
         img = driver.find_element(By.ID, "captcha")
-        img_captcha_base64 = driver.execute_async_script("""
-            var ele = arguments[0], callback = arguments[1];
-            ele.addEventListener("load", function fn() {
-                ele.removeEventListener("load", fn, false);
-                var cnv = document.createElement("canvas");
-                cnv.width = this.width; cnv.height = this.height;
-                cnv.getContext("2d").drawImage(this, 0, 0);
-                callback(cnv.toDataURL("image/jpeg").substring(22));
-            }, false);
-            ele.dispatchEvent(new Event("load"));
-        """, img)
-# get cokies and get again
+        cookies_list = driver.get_cookies()
+        # print(cookies_list)
+        header = {
+            'Cookie': '',
+            'Referer': 'https://portal.nctu.edu.tw/portal/login.php',
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36'
+        }
 
+        cookies_dict = {}
+        for cookie in cookies_list:
+            cookies_dict[cookie['name']] = cookie['value']
+        cookies_string = ""
+        cookies_string = \
+            'PHPSESSID=' + cookies_dict['PHPSESSID']
+        header['Cookie'] = cookies_string
+        # print(cookies_string)
         with open(r"/tmp/getcaptcha.jpg", "wb") as f:
-            f.write(base64.b64decode(img_captcha_base64))
+            res = requests.get(
+                'https://portal.nctu.edu.tw/captcha/pitctest/pic.php?t=1512570353936',
+                headers=header)  # paint
+            f.write(res.content)
+        print(header)
         files = {"file": open("/tmp/getcaptcha.jpg", "rb")}
         res = requests.post("https://hare1039.nctu.me/cracknctu", files=files)
         os.remove("/tmp/getcaptcha.jpg")
