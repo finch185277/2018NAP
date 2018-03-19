@@ -28,15 +28,14 @@ if __name__ == "__main__":
     driver.get("https://portal.nctu.edu.tw/portal/login.php")
     parsed = False
     while not parsed:
-        img = driver.find_element(By.ID, "captcha")
-        cookies_list = driver.get_cookies()
-        # print(cookies_list)
         header = {
             'Cookie': '',
             'Referer': 'https://portal.nctu.edu.tw/portal/login.php',
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36\
+             (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36'
         }
 
+        cookies_list = driver.get_cookies()
         cookies_dict = {}
         for cookie in cookies_list:
             cookies_dict[cookie['name']] = cookie['value']
@@ -45,12 +44,13 @@ if __name__ == "__main__":
             'PHPSESSID=' + cookies_dict['PHPSESSID']
         header['Cookie'] = cookies_string
         # print(cookies_string)
+        captcha_url = "https://portal.nctu.edu.tw/captcha/pitctest/pic.php"
         with open(r"/tmp/getcaptcha.jpg", "wb") as f:
             res = requests.get(
-                'https://portal.nctu.edu.tw/captcha/pitctest/pic.php?t=1512570353936',
+                captcha_url,
                 headers=header)  # paint
             f.write(res.content)
-        print(header)
+        # print(header)
         files = {"file": open("/tmp/getcaptcha.jpg", "rb")}
         res = requests.post("https://hare1039.nctu.me/cracknctu", files=files)
         os.remove("/tmp/getcaptcha.jpg")
