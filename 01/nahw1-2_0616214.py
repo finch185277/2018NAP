@@ -55,7 +55,7 @@ if __name__ == "__main__":
         "-n", help="how only the user of most N-th times", nargs="?", type=int)
     parsor.add_argument(
         "-t",
-        help="show only the user of attacking equal or more than N-th times",
+        help="show only the user of attacking equal or more than T-th times",
         nargs="?", type=int)
     parsor.add_argument("-r", help="sort in reverse order", action="count")
     parsor.add_argument("filename", help="Log file path.", nargs="*")
@@ -105,10 +105,10 @@ if __name__ == "__main__":
     x.field_names = ["user", "count"]
     top = 0
     for user in sorted_summery:
-        top = top + 1
-        if top > opt.top:
+        if top >= opt.top:
             break
-        if sorted_summery[user] > opt.morethan:
+        if sorted_summery[user] >= opt.morethan:
             x.add_row([user, sorted_summery[user]])
+            top = top + 1
 
     print(x)
