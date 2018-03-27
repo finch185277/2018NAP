@@ -1,9 +1,9 @@
 import argparse
 import sys
-import operator
+import operator  # no
 import collections
 from dateutil import parser
-from pprint import pprint
+from pprint import pprint  # no
 from prettytable import PrettyTable
 
 
@@ -97,18 +97,30 @@ if __name__ == "__main__":
 
     if opt.sortby == "count":
         sorted_summery = collections.OrderedDict(
-            sorted(summery.items(), key=lambda t: -t[1], reverse=opt.reverse))
+            sorted(summery.items(), key=lambda t: -t[1]))
     else:
         sorted_summery = collections.OrderedDict(
-            sorted(summery.items(), key=lambda t:  t[0], reverse=opt.reverse))
-    x = PrettyTable()
-    x.field_names = ["user", "count"]
+            sorted(summery.items(), key=lambda t:  t[0]))
+
+    last_dic = {}
     top = 0
     for user in sorted_summery:
         if top >= opt.top:
             break
         if sorted_summery[user] >= opt.morethan:
-            x.add_row([user, sorted_summery[user]])
+            last_dic[user] = sorted_summery[user]
             top = top + 1
+
+    if opt.sortby == "count":
+        last_summery = collections.OrderedDict(
+            sorted(last_dic.items(), key=lambda t: -t[1], reverse=opt.reverse))
+    else:
+        last_summery = collections.OrderedDict(
+            sorted(last_dic.items(), key=lambda t:  t[0], reverse=opt.reverse))
+
+    x = PrettyTable()
+    x.field_names = ["user", "count"]
+    for user in last_summery:
+        x.add_row([user, last_summery[user]])
 
     print(x)
